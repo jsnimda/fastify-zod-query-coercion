@@ -1,6 +1,6 @@
 {
   "name": "fastify-zod-query-coercion",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A Fastify plugin for Zod query parameter coercion",
   "keywords": [
     "fastify",
