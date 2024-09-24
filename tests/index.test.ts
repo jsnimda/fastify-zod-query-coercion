@@ -12,8 +12,8 @@ async function buildServer(schema: z.ZodObject<any, any>) {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   app.setErrorHandler((error, request, reply) => {
-    if (error instanceof ValidationError) {
-      reply.status(error.statusCode ?? 500).send(fromZodError(error.zodError).toString());
+    if (error instanceof ValidationError && error.statusCode) {
+      reply.status(error.statusCode).send(fromZodError(error.zodError, { prefix: null }).toString());
     } else {
       reply.send(error);
     }
@@ -158,7 +158,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(response.statusCode).toBe(400);
-    expect(response.payload).toBe('Validation error: Expected string, received array at "arrayString"');
+    expect(response.payload).toBe('Expected string, received array at "arrayString"');
   });
 
   it('should handle nullable values correctly', async () => {
@@ -218,7 +218,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(responseWithNonNullValue.statusCode).toBe(400);
-    expect(responseWithNonNullValue.payload).toBe('Validation error: Expected null, received string at "anotherNullField"');
+    expect(responseWithNonNullValue.payload).toBe('Expected null, received string at "anotherNullField"');
   });
 
   it('should handle array values correctly', async () => {
@@ -291,7 +291,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(responseWithInvalidInput.statusCode).toBe(400);
-    expect(responseWithInvalidInput.payload).toBe('Validation error: Must be positive at "positiveNumber"');
+    expect(responseWithInvalidInput.payload).toBe('Must be positive at "positiveNumber"');
   });
 
   it('should throw an error for unsupported schema types during route registration', async () => {
