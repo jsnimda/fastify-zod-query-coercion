@@ -3,7 +3,8 @@ import { fastifyZodOpenApiPlugin, serializerCompiler, ValidationError, validator
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
-import fastifyZodQueryCoercion, { FST_ZOD_QUERY_COERCION_ERROR } from './plugin.js';
+import fastifyZodQueryCoercion from '../src/index.js';
+import { FST_ZOD_QUERY_COERCION_ERROR } from '../src/plugin.js';
 
 async function buildServer(schema: z.ZodObject<any, any>) {
   const app = Fastify();
@@ -298,6 +299,12 @@ describe('fastifyZodQueryCoercion', () => {
       unsupported: z.set(z.string()),
     });
 
-    await expect(buildServer(schema)).rejects.toThrow(FST_ZOD_QUERY_COERCION_ERROR);
+    try {
+      await buildServer(schema);
+      expect.unreachable();
+    } catch (error: any) {
+      expect(error).toBeInstanceOf(FST_ZOD_QUERY_COERCION_ERROR);
+      expect(error.message).toBe('Unsupported schema type for query coercion: ZodSet at "unsupported"');
+    }
   });
 });

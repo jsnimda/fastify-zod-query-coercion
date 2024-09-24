@@ -1,5 +1,4 @@
 import fastifyZodQueryCoercion from './plugin.js';
 
-export * from './plugin.js';
-export { fastifyZodQueryCoercion };
-export default fastifyZodQueryCoercion;
+export * from './symbols.js';
+export { fastifyZodQueryCoercion as default, fastifyZodQueryCoercion };

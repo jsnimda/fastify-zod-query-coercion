@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 
-// Reference: https://github.com/asteasolutions/zod-to-openapi/blob/master/src/lib/zod-is-type.ts
+// Reference: https://github.com/samchungy/zod-openapi/blob/master/src/zodType.ts
 
 type ZodTypeMap = {
   ZodArray: z.ZodArray<z.ZodTypeAny>;

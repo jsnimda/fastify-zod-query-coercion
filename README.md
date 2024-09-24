@@ -1,6 +1,6 @@
 <div align="center">
 
-# Fastify Zod Query Coercion
+# fastify-zod-query-coercion
 
 [![NPM version](https://img.shields.io/npm/v/fastify-zod-query-coercion.svg?style=flat)](https://www.npmjs.com/package/fastify-zod-query-coercion)
 [![NPM downloads](https://img.shields.io/npm/dm/fastify-zod-query-coercion.svg?style=flat)](https://www.npmjs.com/package/fastify-zod-query-coercion)
@@ -11,7 +11,7 @@ A Fastify plugin that automatically coerces query string parameters to match Zod
 
 </div>
 
-## Installation
+## Install
 
 ```bash
 npm install fastify-zod-query-coercion
