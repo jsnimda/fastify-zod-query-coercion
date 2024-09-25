@@ -165,195 +165,70 @@ These coercion rules are applied recursively to nested schemas, including those 
 
 ## Detailed Coercion Rules and Limitations
 
-The plugin preprocesses (coerces) query string parameters to match the expected Zod schema types. Here are the detailed rules and reasons for support or lack thereof:
+The plugin preprocesses (coerces) query string parameters to match the expected Zod schema types. Here are the general principles and specific rules for each supported type.
 
-### Primitives
+### Important Note on Schema Validation
 
-- **z.string()**
-  - Supported
-  - Direct passthrough
+This plugin performs schema validation at startup time. If you provide an unsupported schema type, the plugin will throw an error during route registration, not at request time. This helps catch configuration errors early in the development process.
 
-- **z.number()**
-  - Supported
-  - Converts to number if it is a valid number (i.e., !isNaN, isFinite)
-  - Uses `Number(val)`
+### General Coercion Principles
 
-- **z.bigint()**
-  - Supported
-  - Converts to bigint if `BigInt(val)` doesn't throw an error
+1. String values are converted to their appropriate types when possible.
+2. Non-convertible values are passed through as-is for Zod to handle during validation.
+3. Nested schemas within supported types are also processed recursively.
 
-- **z.boolean()**
-  - Supported
-  - `"true"` → `true`
-  - `"false"` → `false`
+### Supported Types and Their Coercion Rules
 
-- **z.date()**
-  - Supported
-  - Converts only if it is a number (string that is a number) or an ISO date (other date formats will not convert)
-  - Uses the same regex as `z.string().datetime()` to check ISO date
-  - Uses `new Date(val)` to construct, `val` cast to number first if it is a string that is a number
+| Zod Type | Coercion Rule |
+|----------|---------------|
+| `z.string()` | Direct passthrough |
+| `z.number()` | Converts to number if valid (using `Number(val)`) |
+| `z.bigint()` | Converts to BigInt if possible |
+| `z.boolean()` | `"true"` → `true`, `"false"` → `false` |
+| `z.date()` | Converts number strings or ISO date strings to Date objects |
+| `z.null()` | `"null"` → `null` |
+| `z.undefined()` | Direct passthrough |
+| `z.literal()` | Converts to literal value if string representation matches |
+| `z.enum()` | Direct passthrough |
+| `z.array()` | Wraps single values in an array |
+| `z.tuple()` | Wraps single values in an array |
+| `z.union()` | Processes each option in the union |
+| `z.intersection()` | Processes each part of the intersection |
+| `z.set()` | Converts to Set, wrapping single values if necessary |
+| `z.optional()` | Processes inner schema |
+| `z.nullable()` | Processes inner schema, `"null"` → `null` |
+| `z.default()` | Processes inner schema |
+| `z.catch()` | Processes inner schema |
+| `z.preprocess()` | Direct passthrough (user-defined preprocessing) |
+| `z.refine()` / `z.superRefine()` | Processes inner schema |
+| `z.transform()` | Processes inner schema |
+| `z.pipe()` | Processes only the first schema in the pipeline |
 
-- **z.symbol()**
-  - Unsupported
-  - (No meaningful way to convert string to symbol)
+### Special Cases
 
-- **z.undefined()**
-  - Supported
-  - Direct passthrough, will not convert, key can be undefined if not provided in the query
+- `z.literal(undefined)`: Checks if the key exists in the query string
+- `z.never()`: Passes through, but will cause a validation error if provided
+- `z.any()` / `z.unknown()`: Direct passthrough
+- `z.void()`: Behaves like `z.undefined()`
 
-- **z.null()**
-  - Supported
-  - `"null"` → `null`
+### Unsupported Types
 
-- **z.void()**
-  - Supported
-  - Direct passthrough, same reason as undefined
+The following types are not supported due to the limitations of query string representation:
 
-- **z.any()**
-  - Supported
-  - Direct passthrough
+- `z.object()` (except as top-level schema)
+- `z.symbol()`
+- `z.nan()`
+- `z.discriminatedUnion()`
+- `z.record()`
+- `z.map()`
+- `z.lazy()`
+- `z.promise()`
+- `z.function()`
+- `z.instanceof()`
+- `z.branded()`
+- `z.readonly()`
 
-- **z.unknown()**
-  - Supported
-  - Direct passthrough
-
-- **z.never()**
-  - Supported
-  - Direct passthrough
-  - User will get an error if they provide this key
-
-### Other Types
-
-- **z.literal()**
-  - Supported (except symbol)
-  - Zod supports args: string | number | symbol | bigint | boolean | null | undefined
-  - Converts to the literal value if the ('' + literal value) is equal to the query val
-  - For `z.literal(undefined)`, checks if the key exists in the query string
-  - Otherwise passthrough
-
-- **z.nan()**
-  - Unsupported
-  - (Not meaningful)
-
-- **z.enum()**
-  - Supported
-  - Like string, direct passthrough
-
-- **z.nativeEnum()**
-  - Unsupported
-  - (No meaningful way to convert string to Enums; should use the enum key or value)
-
-- **z.optional() / .optional()**
-  - Supported
-  - Nested schema is also processed
-
-- **z.nullable() / .nullable()**
-  - Supported
-  - `"null"` → `null`
-  - Nested schema is also processed
-
-- **z.object()**
-  - Unsupported
-  - (No meaningful way to convert string to object)
-
-- **z.array() / .array()**
-  - Supported
-  - Wraps the non-array value with an array of length 1
-  - Nested schema is also processed
-
-- **z.tuple() / .tuple()**
-  - Supported
-  - Wraps the non-array value with an array of length 1
-  - Nested schema is also processed
-
-- **z.union() / .or()**
-  - Supported
-  - Nested schema is also processed
-
-- **z.discriminatedUnion()**
-  - Unsupported
-  - (Requires objects, and there is no meaningful way to express object in strings)
-
-- **z.record()**
-  - Unsupported
-  - (Same reason as object)
-
-- **z.map()**
-  - Unsupported
-  - (Map is like record, and same reason as record)
-
-- **z.set()**
-  - Supported
-  - Like array, and array is converted to `Set()` before passthrough
-
-- **z.intersection() / .and()**
-  - Supported
-  - Intersection not only used with objects, but may also be used on union, so it is supported
-
-- **z.lazy()**
-  - Unsupported
-  - (Not supported for now, avoid infinite recursion)
-
-### ZodEffects
-
-- **ZodEffects / .refine() / .superRefine()**
-  - Supported
-  - Nested schema is also processed
-
-- **ZodEffects / .transform()**
-  - Supported
-  - Nested schema is also processed
-
-- **ZodEffects / .preprocess()**
-  - Supported
-  - Will not process, just passthrough, as user preprocess is intended (or already) to do our jobs
-
-### Other Schema Methods
-
-- **z.promise()**
-  - Unsupported
-  - (No way to express promise in string)
-
-- **z.instanceof()**
-  - Unsupported
-  - (Instanceof is for objects, and string is not an object)
-
-- **z.function()**
-  - Unsupported
-  - (String is not a function)
-
-- **z.custom()**
-  - Supported
-  - Direct passthrough, you know your job
-
-- **ZodDefault / .default()**
-  - Supported
-  - Direct passthrough
-  - Nested schema is processed as well
-
-- **ZodCatch / .catch()**
-  - Supported
-  - Assuming you want to provide value if parsing fails, direct passthrough
-  - Nested schema is processed as well
-
-- **.nullish()**
-  - Supported
-  - It is just optional + nullable
-
-- **ZodBranded / .brand()**
-  - Unsupported
-  - (Not sure of its usefulness)
-
-- **ZodReadonly / .readonly()**
-  - Unsupported
-  - (Not sure of its usefulness)
-
-### ZodPipeline
-
-- **ZodPipeline / .pipe()**
-  - Supported
-  - Only the first schema is processed
-  - Nested schema of the first schema is processed as well
+For these types, consider using alternative representations or handling them differently in your application logic.
 
 ## API Reference
 
