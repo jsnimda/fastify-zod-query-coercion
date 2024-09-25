@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.0...v0.2.1) (2024-09-25)
+
+
+### Bug Fixes
+
+* ensure schema immutability in plugin transformation ([3c57b95](https://github.com/jsnimda/fastify-zod-query-coercion/commit/3c57b95925519d359d8d8ae06d7465d40c4f99ce))
+* ensure schema immutability in transform function ([b67dcbe](https://github.com/jsnimda/fastify-zod-query-coercion/commit/b67dcbede5c3ad542971279c3e5a8229928b8585))
+
 ## [0.2.0](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.1.2...v0.2.0) (2024-09-25)
 
 
