@@ -25,8 +25,10 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
     if (schema._def.effect.type === 'preprocess') {
       return schema;
     }
-    schema._def.schema = transformSchema(schema._def.schema);
-    return schema;
+    return new z.ZodEffects({
+      ...schema._def,
+      schema: transformSchema(schema._def.schema),
+    });
   }
 
   if (isZodType(schema, 'ZodLiteral')) {
@@ -91,69 +93,87 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
   }
 
   if (isZodType(schema, 'ZodNullable')) {
-    schema._def.innerType = transformSchema(schema._def.innerType);
     return z.preprocess((val) => {
       if (val === 'null') return null;
       return val;
-    }, schema);
+    }, new z.ZodNullable({
+      ...schema._def,
+      innerType: transformSchema(schema._def.innerType),
+    }));
   }
 
   if (isZodType(schema, 'ZodOptional')) {
-    schema._def.innerType = transformSchema(schema._def.innerType);
-    return schema;
+    return new z.ZodOptional({
+      ...schema._def,
+      innerType: transformSchema(schema._def.innerType),
+    });
   }
 
   if (isZodType(schema, 'ZodArray')) {
-    schema._def.type = transformSchema(schema._def.type);
     return z.preprocess((val) => {
       if (Array.isArray(val)) return val;
       return [val];
-    }, schema);
+    }, new z.ZodArray({
+      ...schema._def,
+      type: transformSchema(schema._def.type),
+    }));
   }
 
   if (isZodType(schema, 'ZodTuple')) {
-    schema._def.items = schema._def.items.map(transformSchema) as any;
-    if (schema._def.rest) {
-      schema._def.rest = transformSchema(schema._def.rest);
-    }
     return z.preprocess((val) => {
       if (Array.isArray(val)) return val;
       return [val];
-    }, schema);
+    }, new z.ZodTuple({
+      ...schema._def,
+      items: schema._def.items.map(transformSchema) as any,
+      rest: schema._def.rest ? transformSchema(schema._def.rest) : null,
+    }));
   }
 
   if (isZodType(schema, 'ZodSet')) {
-    schema._def.valueType = transformSchema(schema._def.valueType);
     return z.preprocess((val) => {
       if (Array.isArray(val)) return new Set(val);
       return new Set([val]);
-    }, schema);
+    }, new z.ZodSet({
+      ...schema._def,
+      valueType: transformSchema(schema._def.valueType),
+    }));
   }
 
   if (isZodType(schema, 'ZodUnion')) {
-    schema._def.options = schema._def.options.map(transformSchema) as any;
-    return schema;
+    return new z.ZodUnion({
+      ...schema._def,
+      options: schema._def.options.map(transformSchema) as any,
+    });
   }
 
   if (isZodType(schema, 'ZodIntersection')) {
-    schema._def.left = transformSchema(schema._def.left);
-    schema._def.right = transformSchema(schema._def.right);
-    return schema;
+    return new z.ZodIntersection({
+      ...schema._def,
+      left: transformSchema(schema._def.left),
+      right: transformSchema(schema._def.right),
+    });
   }
 
   if (isZodType(schema, 'ZodCatch')) {
-    schema._def.innerType = transformSchema(schema._def.innerType);
-    return schema;
+    return new z.ZodCatch({
+      ...schema._def,
+      innerType: transformSchema(schema._def.innerType),
+    });
   }
 
   if (isZodType(schema, 'ZodDefault')) {
-    schema._def.innerType = transformSchema(schema._def.innerType);
-    return schema;
+    return new z.ZodDefault({
+      ...schema._def,
+      innerType: transformSchema(schema._def.innerType),
+    });
   }
 
   if (isZodType(schema, 'ZodPipeline')) {
-    schema._def.in = transformSchema(schema._def.in);
-    return schema;
+    return new z.ZodPipeline({
+      ...schema._def,
+      in: transformSchema(schema._def.in),
+    });
   }
 
   if (isZodType(schema, 'ZodUndefined')) {
