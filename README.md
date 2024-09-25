@@ -11,6 +11,27 @@ A Fastify plugin that automatically coerces query string parameters to match Zod
 
 </div>
 
+## Table of Contents
+
+- [Install](#install)
+- [Usage](#usage)
+- [Features](#features)
+- [Supported Zod Types](#supported-zod-types)
+  - [Unsupported Zod Types](#unsupported-zod-types)
+- [How It Works](#how-it-works)
+- [Coercion Rules](#coercion-rules)
+  - [Currently Supported Coercion Rules](#currently-supported-coercion-rules)
+- [Detailed Coercion Rules and Limitations](#detailed-coercion-rules-and-limitations)
+  - [Important Note on Schema Validation](#important-note-on-schema-validation)
+  - [General Coercion Principles](#general-coercion-principles)
+  - [Supported Types and Their Coercion Rules](#supported-types-and-their-coercion-rules)
+  - [Special Cases](#special-cases)
+  - [Unsupported Types](#unsupported-types)
+- [API Reference](#api-reference)
+- [Compatibility](#compatibility)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Install
 
 ```bash
