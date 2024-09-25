@@ -32,7 +32,7 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
   if (isZodType(schema, 'ZodLiteral')) {
     if (typeof schema._def.value === 'symbol') throw new UnsupportedZodType('ZodLiteral with symbol');
     return z.preprocess((val) => {
-      if (typeof schema._def.value === 'symbol') return val;
+      if (typeof schema._def.value === 'symbol') /* v8 ignore next */ return val;
       if (typeof schema._def.value === 'undefined') return val;
       if (('' + schema._def.value) === val) return schema._def.value;
       return val;
@@ -122,17 +122,17 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
     }, schema);
   }
 
-  if (isZodType(schema, 'ZodUnion')) {
-    schema._def.options = schema._def.options.map(transformSchema) as any;
-    return schema;
-  }
-
   if (isZodType(schema, 'ZodSet')) {
     schema._def.valueType = transformSchema(schema._def.valueType);
     return z.preprocess((val) => {
       if (Array.isArray(val)) return new Set(val);
       return new Set([val]);
     }, schema);
+  }
+
+  if (isZodType(schema, 'ZodUnion')) {
+    schema._def.options = schema._def.options.map(transformSchema) as any;
+    return schema;
   }
 
   if (isZodType(schema, 'ZodIntersection')) {
