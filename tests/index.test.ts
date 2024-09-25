@@ -1004,11 +1004,15 @@ describe('fastifyZodQueryCoercion', () => {
     }
   });
 
-  it('should not affect body schema when using the same schema for querystring and body', async () => {
+  it('should coerce query parameters but not affect body schema', async () => {
+    const numberSchema = z.number().optional();
+    const stringSchema = z.string().optional();
+    const booleanSchema = z.boolean().optional();
+
     const sharedSchema = z.object({
-      number: z.number(),
-      string: z.string(),
-      boolean: z.boolean(),
+      number: numberSchema,
+      string: stringSchema,
+      boolean: booleanSchema,
     });
 
     const app = Fastify();
@@ -1036,7 +1040,29 @@ describe('fastifyZodQueryCoercion', () => {
 
     await app.ready();
 
-    const response = await app.inject({
+    // Test query parameter coercion
+    const queryResponse = await app.inject({
+      method: 'POST',
+      url: '/test?number=42&string=hello&boolean=true',
+      payload: {
+        number: 42,
+        string: "world",
+        boolean: false
+      },
+    });
+
+    expect(queryResponse.statusCode).toBe(200);
+    const queryResult = JSON.parse(queryResponse.payload);
+
+    // Query parameters should be coerced
+    expect(queryResult.query).toEqual({
+      number: 42,
+      string: "hello",
+      boolean: true
+    });
+
+    // Test body schema remains unaffected
+    const bodyResponse = await app.inject({
       method: 'POST',
       url: '/test?number=42&string=hello&boolean=true',
       payload: {
@@ -1046,21 +1072,14 @@ describe('fastifyZodQueryCoercion', () => {
       },
     });
 
-    expect(response.statusCode).toBe(200);
-    const result = JSON.parse(response.payload);
+    // Body should fail validation
+    expect(bodyResponse.statusCode).toBe(400);
+    expect(bodyResponse.payload).toContain('Expected number, received string at "number"');
+    expect(bodyResponse.payload).toContain('Expected boolean, received string at "boolean"');
 
-    // Query parameters should be coerced
-    expect(result.query).toEqual({
-      number: 42,
-      string: "hello",
-      boolean: true
-    });
-
-    // Body should remain uncoerced
-    expect(result.body).toEqual({
-      number: "42",
-      string: "world",
-      boolean: "false"
-    });
+    // Verify that the original schemas are unchanged
+    expect(numberSchema).toBe(sharedSchema.shape.number);
+    expect(stringSchema).toBe(sharedSchema.shape.string);
+    expect(booleanSchema).toBe(sharedSchema.shape.boolean);
   });
 });
