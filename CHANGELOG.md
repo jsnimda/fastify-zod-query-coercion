@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.3...v0.2.4) (2024-09-25)
+
+
+### Miscellaneous Chores
+
+* prepare release 0.2.4 ([bed8496](https://github.com/jsnimda/fastify-zod-query-coercion/commit/bed8496cfa8e12ee69b5a50f17b528ff2c050711))
+
 ## [0.2.3](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.2...v0.2.3) (2024-09-25)
 
 
