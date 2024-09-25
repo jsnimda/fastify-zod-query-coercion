@@ -1,20 +1,14 @@
-import Fastify, { type FastifySchemaCompiler } from 'fastify';
+import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
 import { z, ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import fastifyZodQueryCoercion from '../src/index.js';
 import { FST_ZOD_QUERY_COERCION_ERROR } from '../src/plugin.js';
+import { validatorCompiler } from './test-utils.js';
 
 async function buildServer(schema: z.ZodObject<any, any>, queryInterceptor?: (query: any) => void) {
   const app = Fastify();
 
-  const validatorCompiler: FastifySchemaCompiler<z.ZodType> = ({ schema }) => (value) => {
-    const result = schema.safeParse(value);
-    if (!result.success) {
-      return { error: result.error };
-    }
-    return { value: result.data };
-  };
   app.setValidatorCompiler(validatorCompiler);
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError && error.statusCode) {
