@@ -25,7 +25,10 @@ const plugin: FastifyPluginAsync = async (fastify) => {
         }
         return acc;
       }, {} as z.ZodRawShape);
-      route.schema.querystring._def.shape = () => newShape;
+      route.schema.querystring = new z.ZodObject({
+        ...route.schema.querystring._def,
+        shape: () => newShape,
+      });
       (route.schema.querystring as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED] = true;
     }
   });

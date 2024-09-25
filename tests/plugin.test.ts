@@ -27,15 +27,23 @@ describe('fastifyZodQueryCoercion plugin', () => {
   it('should transform querystring schema', async () => {
     await app.register(fastifyZodQueryCoercion);
 
-    const schema = z.object({ test: z.string() });
+    const originalSchema = z.object({ test: z.string() });
     const transformSpy = vi.spyOn(transform, 'transformSchema');
 
-    app.get('/', { schema: { querystring: schema } }, () => 'ok');
+    let transformedSchema: z.ZodObject<any> | undefined;
+    app.addHook('onRoute', (routeOptions) => {
+      transformedSchema = routeOptions.schema?.querystring as z.ZodObject<any>;
+    });
+
+    app.get('/', { schema: { querystring: originalSchema } }, () => 'ok');
 
     await app.ready();
 
-    expect(transformSpy).toHaveBeenCalledWith(schema.shape.test);
-    expect((schema as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBe(true);
+    expect(transformSpy).toHaveBeenCalledWith(originalSchema.shape.test);
+    expect(transformedSchema).toBeDefined();
+    expect(transformedSchema).not.toBe(originalSchema);
+    expect((transformedSchema as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBe(true);
+    expect((originalSchema as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBeUndefined();
   });
 
   it('should not transform schema if already processed', async () => {
@@ -56,7 +64,7 @@ describe('fastifyZodQueryCoercion plugin', () => {
     await app.register(fastifyZodQueryCoercion);
 
     const schema = z.object({ test: z.string().brand('Brand') });
-    vi.spyOn(transform, 'transformSchema').mockImplementation(() => {
+    vi.spyOn(transform, 'transformSchema').mockImplementationOnce(() => {
       throw new transform.UnsupportedZodType('Unsupported type');
     });
 
@@ -69,7 +77,7 @@ describe('fastifyZodQueryCoercion plugin', () => {
     await app.register(fastifyZodQueryCoercion);
 
     const schema = z.object({ test: z.string() });
-    vi.spyOn(transform, 'transformSchema').mockImplementation(() => {
+    vi.spyOn(transform, 'transformSchema').mockImplementationOnce(() => {
       throw new Error('Unexpected error');
     });
 
