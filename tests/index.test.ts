@@ -34,82 +34,6 @@ async function buildServer(schema: z.ZodObject<any, any>) {
 }
 
 describe('fastifyZodQueryCoercion', () => {
-  it('should coerce boolean values correctly and handle optional fields', async () => {
-    const schema = z.object({
-      boolTrue: z.boolean(),
-      boolFalse: z.boolean(),
-      boolOptional: z.boolean().optional(),
-      boolDefaultTrue: z.boolean().default(true),
-      boolDefaultFalse: z.boolean().default(false),
-    });
-    const fastify = await buildServer(schema);
-
-    const response = await fastify.inject({
-      method: 'GET',
-      url: '/test?boolTrue=true&boolFalse=false&boolOptional=1&boolDefaultFalse=true',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.payload)).toEqual({
-      boolTrue: true,
-      boolFalse: false,
-      boolOptional: true,
-      boolDefaultTrue: true,
-      boolDefaultFalse: true,
-    });
-
-    const responseWithMissing = await fastify.inject({
-      method: 'GET',
-      url: '/test?boolTrue=1&boolFalse=0',
-    });
-
-    expect(responseWithMissing.statusCode).toBe(200);
-    expect(JSON.parse(responseWithMissing.payload)).toEqual({
-      boolTrue: true,
-      boolFalse: false,
-      boolDefaultTrue: true,
-      boolDefaultFalse: false,
-    });
-  });
-
-  it('should coerce number values correctly and handle optional fields', async () => {
-    const schema = z.object({
-      intPositive: z.number(),
-      intNegative: z.number(),
-      float: z.number(),
-      numberOptional: z.number().optional(),
-      numberDefault: z.number().default(42),
-    });
-    const fastify = await buildServer(schema);
-
-    const response = await fastify.inject({
-      method: 'GET',
-      url: '/test?intPositive=123&intNegative=-456&float=3.14&numberOptional=0&numberDefault=10',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.payload)).toEqual({
-      intPositive: 123,
-      intNegative: -456,
-      float: 3.14,
-      numberOptional: 0,
-      numberDefault: 10,
-    });
-
-    const responseWithMissing = await fastify.inject({
-      method: 'GET',
-      url: '/test?intPositive=123&intNegative=-456&float=3.14',
-    });
-
-    expect(responseWithMissing.statusCode).toBe(200);
-    expect(JSON.parse(responseWithMissing.payload)).toEqual({
-      intPositive: 123,
-      intNegative: -456,
-      float: 3.14,
-      numberDefault: 42,
-    });
-  });
-
   it('should handle string values correctly and handle optional fields', async () => {
     const schema = z.object({
       normalString: z.string(),
@@ -161,6 +85,109 @@ describe('fastifyZodQueryCoercion', () => {
     expect(response.payload).toBe('Expected string, received array at "arrayString"');
   });
 
+  it('should coerce number values correctly and handle optional fields', async () => {
+    const schema = z.object({
+      intPositive: z.number(),
+      intNegative: z.number(),
+      float: z.number(),
+      numberOptional: z.number().optional(),
+      numberDefault: z.number().default(42),
+    });
+    const fastify = await buildServer(schema);
+
+    const response = await fastify.inject({
+      method: 'GET',
+      url: '/test?intPositive=123&intNegative=-456&float=3.14&numberOptional=0&numberDefault=10',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({
+      intPositive: 123,
+      intNegative: -456,
+      float: 3.14,
+      numberOptional: 0,
+      numberDefault: 10,
+    });
+
+    const responseWithMissing = await fastify.inject({
+      method: 'GET',
+      url: '/test?intPositive=123&intNegative=-456&float=3.14',
+    });
+
+    expect(responseWithMissing.statusCode).toBe(200);
+    expect(JSON.parse(responseWithMissing.payload)).toEqual({
+      intPositive: 123,
+      intNegative: -456,
+      float: 3.14,
+      numberDefault: 42,
+    });
+  });
+
+  it('should coerce boolean values correctly and handle optional fields', async () => {
+    const schema = z.object({
+      boolTrue: z.boolean(),
+      boolFalse: z.boolean(),
+      boolOptional: z.boolean().optional(),
+      boolDefaultTrue: z.boolean().default(true),
+      boolDefaultFalse: z.boolean().default(false),
+    });
+    const fastify = await buildServer(schema);
+
+    const response = await fastify.inject({
+      method: 'GET',
+      url: '/test?boolTrue=true&boolFalse=false&boolOptional=1&boolDefaultFalse=true',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({
+      boolTrue: true,
+      boolFalse: false,
+      boolOptional: true,
+      boolDefaultTrue: true,
+      boolDefaultFalse: true,
+    });
+
+    const responseWithMissing = await fastify.inject({
+      method: 'GET',
+      url: '/test?boolTrue=1&boolFalse=0',
+    });
+
+    expect(responseWithMissing.statusCode).toBe(200);
+    expect(JSON.parse(responseWithMissing.payload)).toEqual({
+      boolTrue: true,
+      boolFalse: false,
+      boolDefaultTrue: true,
+      boolDefaultFalse: false,
+    });
+  });
+
+  it('should handle null values correctly and reject non-null values', async () => {
+    const schema = z.object({
+      nullField: z.null(),
+      anotherNullField: z.null(),
+    });
+    const fastify = await buildServer(schema);
+
+    const response = await fastify.inject({
+      method: 'GET',
+      url: '/test?nullField=null&anotherNullField=null',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({
+      nullField: null,
+      anotherNullField: null,
+    });
+
+    const responseWithNonNullValue = await fastify.inject({
+      method: 'GET',
+      url: '/test?nullField=null&anotherNullField=notNull',
+    });
+
+    expect(responseWithNonNullValue.statusCode).toBe(400);
+    expect(responseWithNonNullValue.payload).toBe('Expected null, received string at "anotherNullField"');
+  });
+
   it('should handle nullable values correctly', async () => {
     const schema = z.object({
       nullableString: z.string().nullable(),
@@ -192,33 +219,6 @@ describe('fastifyZodQueryCoercion', () => {
       nullableNumber: 123,
       nullableOptional: 456,
     });
-  });
-
-  it('should handle null values correctly and reject non-null values', async () => {
-    const schema = z.object({
-      nullField: z.null(),
-      anotherNullField: z.null(),
-    });
-    const fastify = await buildServer(schema);
-
-    const response = await fastify.inject({
-      method: 'GET',
-      url: '/test?nullField=null&anotherNullField=null',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.payload)).toEqual({
-      nullField: null,
-      anotherNullField: null,
-    });
-
-    const responseWithNonNullValue = await fastify.inject({
-      method: 'GET',
-      url: '/test?nullField=null&anotherNullField=notNull',
-    });
-
-    expect(responseWithNonNullValue.statusCode).toBe(400);
-    expect(responseWithNonNullValue.payload).toBe('Expected null, received string at "anotherNullField"');
   });
 
   it('should handle array values correctly', async () => {
