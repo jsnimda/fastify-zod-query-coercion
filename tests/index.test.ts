@@ -1003,4 +1003,64 @@ describe('fastifyZodQueryCoercion', () => {
       }
     }
   });
+
+  it('should not affect body schema when using the same schema for querystring and body', async () => {
+    const sharedSchema = z.object({
+      number: z.number(),
+      string: z.string(),
+      boolean: z.boolean(),
+    });
+
+    const app = Fastify();
+
+    app.setValidatorCompiler(validatorCompiler);
+    app.setErrorHandler((error, request, reply) => {
+      if (error instanceof ZodError && error.statusCode) {
+        reply.status(error.statusCode).send(fromZodError(error, { prefix: null }).toString());
+      } else {
+        reply.send(error);
+      }
+    });
+
+    await app.register(fastifyZodQueryCoercion);
+
+    app.post('/test', {
+      schema: {
+        querystring: sharedSchema,
+        body: sharedSchema,
+      },
+      handler: (request, reply) => {
+        return { query: request.query, body: request.body };
+      },
+    });
+
+    await app.ready();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/test?number=42&string=hello&boolean=true',
+      payload: {
+        number: "42",
+        string: "world",
+        boolean: "false"
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const result = JSON.parse(response.payload);
+
+    // Query parameters should be coerced
+    expect(result.query).toEqual({
+      number: 42,
+      string: "hello",
+      boolean: true
+    });
+
+    // Body should remain uncoerced
+    expect(result.body).toEqual({
+      number: "42",
+      string: "world",
+      boolean: "false"
+    });
+  });
 });

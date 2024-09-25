@@ -6,11 +6,13 @@ import { FASTIFY_ZOD_QUERY_COERCION_PROCESSED } from '../src/symbols.js';
 import * as transform from '../src/transform.js';
 import { validatorCompiler } from './test-utils.js';
 
+const getFastify = () => Fastify();
+
 describe('fastifyZodQueryCoercion plugin', () => {
-  let app: ReturnType<typeof Fastify>;
+  let app: ReturnType<typeof getFastify>;
 
   beforeEach(() => {
-    app = Fastify();
+    app = getFastify();
     app.setValidatorCompiler(validatorCompiler);
   });
 
@@ -87,5 +89,47 @@ describe('fastifyZodQueryCoercion plugin', () => {
     await app.ready();
 
     expect(transformSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not modify the original schema object', async () => {
+    let routeConfig: any;
+    app.addHook('onRoute', (route) => {
+      if (route.method === 'GET' && route.url === '/') {
+        routeConfig = route;
+      }
+    });
+
+    await app.register(fastifyZodQueryCoercion);
+
+    const originalSchema = z.object({
+      number: z.number(),
+      string: z.string(),
+      boolean: z.boolean(),
+    });
+
+    const originalSchemaCopy = { ...originalSchema };
+
+    app.get('/', {
+      schema: { querystring: originalSchema },
+      handler: () => 'ok',
+    });
+
+    await app.ready();
+
+    // Check that the original schema object hasn't been modified
+    expect(originalSchema).toEqual(originalSchemaCopy);
+
+    // Ensure that routeConfig was set
+    expect(routeConfig).toBeDefined();
+
+    // Check that the schema used by the route is different from the original
+    expect(routeConfig.schema.querystring).not.toBe(originalSchema);
+    expect(routeConfig.schema.querystring._def.shape()).not.toBe(originalSchema.shape);
+
+    // Verify that the transformed schema has the processed flag
+    expect((routeConfig.schema.querystring as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBe(true);
+
+    // The original schema should not have the processed flag
+    expect((originalSchema as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBeUndefined();
   });
 });
