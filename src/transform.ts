@@ -10,7 +10,7 @@ const isValidNumber = (str: string): boolean => {
 
 const isValidDate = (str: string): boolean => {
   const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{0,3})?Z$/;
-  return isValidNumber(str) || isoDateRegex.test(str);
+  return isoDateRegex.test(str);
 };
 
 export class UnsupportedZodType extends Error {
@@ -71,7 +71,10 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
 
   if (isZodType(schema, 'ZodDate')) {
     return z.preprocess((val) => {
-      if (typeof val === 'string' && isValidDate(val)) return new Date(val);
+      if (typeof val === 'string') {
+        if (isValidNumber(val)) return new Date(Number(val));
+        if (isValidDate(val)) return new Date(val);
+      }
       return val;
     }, schema);
   }
