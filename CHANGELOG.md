@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.1...v0.2.2) (2024-09-25)
+
+
+### Miscellaneous Chores
+
+* enforce squash merging for all pull requests from now on ([dd1da8c](https://github.com/jsnimda/fastify-zod-query-coercion/commit/dd1da8c559a890090c2748c53dabd287fa6559b5))
+
 ## [0.2.1](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.0...v0.2.1) (2024-09-25)
 
 
