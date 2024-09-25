@@ -74,25 +74,30 @@ fastify.listen({ port: 3000 }, (err) => {
 
 The following Zod types are supported for individual query string values:
 
-- ZodBoolean
-- ZodNumber
-- ZodBigInt
-- ZodString
-- ZodDate
-- ZodNull
-- ZodNullable
-- ZodOptional
-- ZodDefault
+- ZodAny
 - ZodArray
-- ZodUnion
-- ZodTuple
+- ZodBigInt
+- ZodBoolean
+- ZodCatch
+- ZodDate
+- ZodDefault
 - ZodEffects
-- ZodSet
-- ZodLiteral (except symbol)
 - ZodEnum
 - ZodIntersection
-- ZodCatch
+- ZodLiteral (except symbol)
+- ZodNever
+- ZodNull
+- ZodNullable
+- ZodNumber
+- ZodOptional
 - ZodPipeline
+- ZodSet
+- ZodString
+- ZodTuple
+- ZodUndefined
+- ZodUnion
+- ZodUnknown
+- ZodVoid
 
 Note: ZodObject is supported as the top-level schema for the entire query string, but not for individual query string values.
 
@@ -100,18 +105,18 @@ Note: ZodObject is supported as the top-level schema for the entire query string
 
 Due to the limitations of query string representation, the following Zod types are not supported for individual query string values:
 
-- ZodObject (except as the top-level schema)
-- ZodSymbol
-- ZodMap
+- ZodBranded
+- ZodDiscriminatedUnion
 - ZodFunction
 - ZodLazy
-- ZodPromise
+- ZodMap
+- ZodNaN
 - ZodNativeEnum
-- ZodRecord
-- ZodDiscriminatedUnion
-- ZodInstanceof
-- ZodBranded
+- ZodPromise
 - ZodReadonly
+- ZodRecord
+- ZodSymbol
+- ZodObject (except as the top-level schema)
 
 These types are either not possible to represent in a query string or require custom parsing logic. If you need to use these types, consider using alternative representations or handling them differently in your application logic.
 
