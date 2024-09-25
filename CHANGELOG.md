@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.4...v0.2.5) (2024-09-25)
+
+
+### Documentation
+
+* add table of contents to README ([39a44c2](https://github.com/jsnimda/fastify-zod-query-coercion/commit/39a44c2e437e00e993d52130da230339edcc118d))
+
 ## [0.2.4](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.3...v0.2.4) (2024-09-25)
 
 
