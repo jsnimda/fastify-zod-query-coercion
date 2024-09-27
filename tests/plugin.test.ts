@@ -162,7 +162,7 @@ describe('fastifyZodQueryCoercion plugin', () => {
   });
 
   it('should transform params schema when specified in options', async () => {
-    await app.register(fastifyZodQueryCoercion, { schemaTypes: ['querystring', 'params'] });
+    await app.register(fastifyZodQueryCoercion, { coerceTypes: ['querystring', 'params'] });
 
     app.get('/:id', {
       schema: {

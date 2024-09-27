@@ -8,23 +8,23 @@ import { isZodType } from './zod-types.js';
 
 export const FST_ZOD_QUERY_COERCION_ERROR = createError('FST_ZOD_QUERY_COERCION_ERROR', '%s at "%s"');
 
-type FastifySchemaType = 'querystring' | 'params' | 'headers' | 'body';
+type CoercibleSchemaType = 'querystring' | 'params' | 'headers' | 'body';
 
 interface FastifyZodQueryCoercionOptions {
-  schemaTypes?: FastifySchemaType[];
+  coerceTypes?: CoercibleSchemaType[];
 }
 
 const plugin: FastifyPluginAsync<FastifyZodQueryCoercionOptions> = async (fastify, opts) => {
-  const schemaTypes = opts.schemaTypes ?? ['querystring'];
+  const coerceTypes = opts.coerceTypes ?? ['querystring'];
 
   fastify.addHook('onRoute', (route) => {
-    schemaTypes.forEach((schemaType) => {
+    coerceTypes.forEach((coerceType) => {
       if (
-        isZodType(route.schema?.[schemaType], 'ZodObject') &&
-        !(route.schema[schemaType] as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]
+        isZodType(route.schema?.[coerceType], 'ZodObject') &&
+        !(route.schema[coerceType] as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]
       ) {
-        route.schema[schemaType] = transformObject(route.schema[schemaType]);
-        (route.schema[schemaType] as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED] = true;
+        route.schema[coerceType] = transformObject(route.schema[coerceType]);
+        (route.schema[coerceType] as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED] = true;
       }
     });
   });
