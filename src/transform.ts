@@ -111,8 +111,8 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
 
   if (isZodType(schema, 'ZodArray')) {
     return z.preprocess((val) => {
-      if (Array.isArray(val)) return val;
-      return [val];
+      if (typeof val === 'string') return [val];
+      return val;
     }, new z.ZodArray({
       ...schema._def,
       type: transformSchema(schema._def.type),
@@ -121,8 +121,8 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
 
   if (isZodType(schema, 'ZodTuple')) {
     return z.preprocess((val) => {
-      if (Array.isArray(val)) return val;
-      return [val];
+      if (typeof val === 'string') return [val];
+      return val;
     }, new z.ZodTuple({
       ...schema._def,
       items: schema._def.items.map(transformSchema) as any,
@@ -132,8 +132,9 @@ export function transformSchema(schema: z.ZodTypeAny): z.ZodTypeAny {
 
   if (isZodType(schema, 'ZodSet')) {
     return z.preprocess((val) => {
-      if (Array.isArray(val)) return new Set(val);
-      return new Set([val]);
+      if (typeof val === 'string') return new Set([val]);
+      if (Array.isArray(val) && val.every((v) => typeof v === 'string')) return new Set(val);
+      return val;
     }, new z.ZodSet({
       ...schema._def,
       valueType: transformSchema(schema._def.valueType),

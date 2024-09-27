@@ -37,7 +37,7 @@ describe('fastifyZodQueryCoercion plugin', () => {
 
     await app.ready();
 
-    expect(transformSpy).toHaveBeenCalledWith(originalSchema.shape.test);
+    expect(transformSpy).toHaveBeenLastCalledWith(originalSchema.shape.test);
     expect(transformedSchema).toBeDefined();
     expect(transformedSchema).not.toBe(originalSchema);
     expect((transformedSchema as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBe(true);

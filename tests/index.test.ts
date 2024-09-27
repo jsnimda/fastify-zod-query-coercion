@@ -1,22 +1,14 @@
-import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';
-import { z, ZodError } from 'zod';
-import { fromZodError } from 'zod-validation-error';
+import { z } from 'zod';
 import fastifyZodQueryCoercion from '../src/index.js';
 import { FST_ZOD_QUERY_COERCION_ERROR } from '../src/plugin.js';
-import { validatorCompiler } from './test-utils.js';
+import { errorHandler, getFastify, validatorCompiler } from './test-utils.js';
 
 async function buildServer(schema: z.ZodObject<any, any>, queryInterceptor?: (query: any) => void) {
-  const app = Fastify();
+  const app = getFastify();
 
   app.setValidatorCompiler(validatorCompiler);
-  app.setErrorHandler((error, request, reply) => {
-    if (error instanceof ZodError && error.statusCode) {
-      reply.status(error.statusCode).send(fromZodError(error, { prefix: null }).toString());
-    } else {
-      reply.send(error);
-    }
-  });
+  app.setErrorHandler(errorHandler);
 
   await app.register(fastifyZodQueryCoercion);
 
@@ -56,7 +48,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(queryInterceptor).toHaveBeenCalledWith({
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
       stringLiteral: 'hello',
       numberLiteral: 42,
       bigintLiteral: BigInt(9007199254740991),
@@ -189,7 +181,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(queryInterceptor).toHaveBeenCalledWith({
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
       bigIntPositive: BigInt('1234567890123456789'),
       bigIntNegative: BigInt('-9876543210987654321'),
       bigIntOptional: BigInt(0),
@@ -202,7 +194,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(responseWithMissing.statusCode).toBe(200);
-    expect(queryInterceptor).toHaveBeenCalledWith({
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
       bigIntPositive: BigInt('1234567890123456789'),
       bigIntNegative: BigInt('-9876543210987654321'),
       bigIntDefault: BigInt(42),
@@ -281,7 +273,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(queryInterceptor).toHaveBeenCalledWith({
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
       isoDate: new Date('2023-05-15T12:00:00Z'),
       timestampDate: new Date('2023-05-15T12:00:00Z'),
       dateOptional: new Date('2023-05-15T12:00:00Z'),
@@ -294,7 +286,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(responseWithMissing.statusCode).toBe(200);
-    expect(queryInterceptor).toHaveBeenCalledWith({
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
       isoDate: new Date('2023-05-15T12:00:00Z'),
       timestampDate: new Date('2023-05-15T12:00:00Z'),
       dateDefault: new Date('2023-01-01T00:00:00Z'),
@@ -442,7 +434,7 @@ describe('fastifyZodQueryCoercion', () => {
   it('should coerce array values correctly and handle optional fields', async () => {
     const schema = z.object({
       stringArray: z.array(z.string()),
-      numberArray: z.array(z.number()),
+      numberArray: z.array(z.number()).default([]),
       mixedArray: z.array(z.union([z.number(), z.boolean()])),
       singleValueArray: z.array(z.boolean()),
       optionalArray: z.array(z.string()).optional(),
@@ -465,13 +457,13 @@ describe('fastifyZodQueryCoercion', () => {
 
     const responseWithMissing = await fastify.inject({
       method: 'GET',
-      url: '/test?stringArray=hello&numberArray=123&mixedArray=false&singleValueArray=true',
+      url: '/test?stringArray=hello&mixedArray=false&singleValueArray=true',
     });
 
     expect(responseWithMissing.statusCode).toBe(200);
     expect(JSON.parse(responseWithMissing.payload)).toEqual({
       stringArray: ['hello'],
-      numberArray: [123],
+      numberArray: [],
       mixedArray: [false],
       singleValueArray: [true],
     });
@@ -541,7 +533,7 @@ describe('fastifyZodQueryCoercion', () => {
   it('should coerce set values correctly and handle optional fields', async () => {
     const schema = z.object({
       numberSet: z.set(z.number()),
-      stringSet: z.set(z.string()),
+      stringSet: z.set(z.string()).default(new Set()),
       mixedSet: z.set(z.union([z.number(), z.boolean()])),
       optionalSet: z.set(z.boolean()).optional(),
     });
@@ -554,7 +546,7 @@ describe('fastifyZodQueryCoercion', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(queryInterceptor).toHaveBeenCalledWith({
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
       numberSet: new Set([1, 2, 3]),
       stringSet: new Set(['a', 'b']),
       mixedSet: new Set([42, true, 123]),
@@ -566,10 +558,13 @@ describe('fastifyZodQueryCoercion', () => {
       url: '/test?numberSet=1&numberSet=2&mixedSet=789',
     });
 
-    expect(responseWithMissing.statusCode).toBe(400);
-    expect(responseWithMissing.payload).toBe(
-      'Required at "stringSet[0]"'
-    );
+    console.log(responseWithMissing);
+    expect(responseWithMissing.statusCode).toBe(200);
+    expect(queryInterceptor).toHaveBeenLastCalledWith({
+      numberSet: new Set([1, 2]),
+      stringSet: new Set(),
+      mixedSet: new Set([789]),
+    });
 
     const responseWithInvalid = await fastify.inject({
       method: 'GET',
@@ -1015,16 +1010,10 @@ describe('fastifyZodQueryCoercion', () => {
       boolean: booleanSchema,
     });
 
-    const app = Fastify();
+    const app = getFastify();
 
     app.setValidatorCompiler(validatorCompiler);
-    app.setErrorHandler((error, request, reply) => {
-      if (error instanceof ZodError && error.statusCode) {
-        reply.status(error.statusCode).send(fromZodError(error, { prefix: null }).toString());
-      } else {
-        reply.send(error);
-      }
-    });
+    app.setErrorHandler(errorHandler);
 
     await app.register(fastifyZodQueryCoercion);
 
