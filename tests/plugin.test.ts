@@ -133,9 +133,10 @@ describe('fastifyZodQueryCoercion plugin', () => {
         params: z.object({
           id: z.number()
         })
+      },
+      handler: (request, reply) => {
+        return { id: request.params.id };
       }
-    }, (request) => {
-      return { id: request.params.id };
     });
 
     const response = await app.inject({
@@ -155,9 +156,10 @@ describe('fastifyZodQueryCoercion plugin', () => {
         params: z.object({
           id: z.number()
         })
+      },
+      handler: (request, reply) => {
+        return { id: request.params.id };
       }
-    }, (request) => {
-      return { id: request.params.id };
     });
 
     const response = await app.inject({

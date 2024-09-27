@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import fastifyZodQueryCoercion from '../src/index.js';
 import { FST_ZOD_QUERY_COERCION_ERROR } from '../src/plugin.js';
@@ -999,76 +999,84 @@ describe('fastifyZodQueryCoercion', () => {
     }
   });
 
-  it('should coerce query parameters but not affect body schema', async () => {
-    const numberSchema = z.number().optional();
-    const stringSchema = z.string().optional();
-    const booleanSchema = z.boolean().optional();
+  describe('should coerce query parameters but not affect body schema', () => {
+    let app: ReturnType<typeof getFastify>;
+    let sharedSchema: z.ZodObject<any>;
+    let numberSchema: z.ZodOptional<z.ZodNumber>;
+    let stringSchema: z.ZodOptional<z.ZodString>;
+    let booleanSchema: z.ZodOptional<z.ZodBoolean>;
 
-    const sharedSchema = z.object({
-      number: numberSchema,
-      string: stringSchema,
-      boolean: booleanSchema,
+    beforeAll(async () => {
+      numberSchema = z.number().optional();
+      stringSchema = z.string().optional();
+      booleanSchema = z.boolean().optional();
+
+      sharedSchema = z.object({
+        number: numberSchema,
+        string: stringSchema,
+        boolean: booleanSchema,
+      });
+
+      app = getFastify();
+      app.setValidatorCompiler(validatorCompiler);
+      app.setErrorHandler(errorHandler);
+
+      await app.register(fastifyZodQueryCoercion);
+
+      app.post('/test', {
+        schema: {
+          querystring: sharedSchema,
+          body: sharedSchema,
+        },
+        handler: (request, reply) => {
+          return { query: request.query, body: request.body };
+        },
+      });
+
+      await app.ready();
     });
 
-    const app = getFastify();
+    it('should coerce query parameters', async () => {
+      const queryResponse = await app.inject({
+        method: 'POST',
+        url: '/test?number=42&string=hello&boolean=true',
+        payload: {
+          number: 42,
+          string: "world",
+          boolean: false
+        },
+      });
 
-    app.setValidatorCompiler(validatorCompiler);
-    app.setErrorHandler(errorHandler);
+      expect(queryResponse.statusCode).toBe(200);
+      const queryResult = JSON.parse(queryResponse.payload);
 
-    await app.register(fastifyZodQueryCoercion);
-
-    app.post('/test', {
-      schema: {
-        querystring: sharedSchema,
-        body: sharedSchema,
-      },
-      handler: (request, reply) => {
-        return { query: request.query, body: request.body };
-      },
-    });
-
-    await app.ready();
-
-    // Test query parameter coercion
-    const queryResponse = await app.inject({
-      method: 'POST',
-      url: '/test?number=42&string=hello&boolean=true',
-      payload: {
+      expect(queryResult.query).toEqual({
         number: 42,
-        string: "world",
-        boolean: false
-      },
+        string: "hello",
+        boolean: true
+      });
     });
 
-    expect(queryResponse.statusCode).toBe(200);
-    const queryResult = JSON.parse(queryResponse.payload);
+    it('should not affect body schema', async () => {
+      const bodyResponse = await app.inject({
+        method: 'POST',
+        url: '/test?number=42&string=hello&boolean=true',
+        payload: {
+          number: "42",
+          string: "world",
+          boolean: "false"
+        },
+      });
 
-    // Query parameters should be coerced
-    expect(queryResult.query).toEqual({
-      number: 42,
-      string: "hello",
-      boolean: true
+      expect(bodyResponse.statusCode).toBe(400);
+      expect(bodyResponse.payload).toContain('Expected number, received string at "number"');
+      expect(bodyResponse.payload).toContain('Expected boolean, received string at "boolean"');
     });
 
-    // Test body schema remains unaffected
-    const bodyResponse = await app.inject({
-      method: 'POST',
-      url: '/test?number=42&string=hello&boolean=true',
-      payload: {
-        number: "42",
-        string: "world",
-        boolean: "false"
-      },
+    it('should not modify the original schemas', () => {
+      expect(numberSchema).toBe(sharedSchema.shape.number);
+      expect(stringSchema).toBe(sharedSchema.shape.string);
+      expect(booleanSchema).toBe(sharedSchema.shape.boolean);
     });
-
-    // Body should fail validation
-    expect(bodyResponse.statusCode).toBe(400);
-    expect(bodyResponse.payload).toContain('Expected number, received string at "number"');
-    expect(bodyResponse.payload).toContain('Expected boolean, received string at "boolean"');
-
-    // Verify that the original schemas are unchanged
-    expect(numberSchema).toBe(sharedSchema.shape.number);
-    expect(stringSchema).toBe(sharedSchema.shape.string);
-    expect(booleanSchema).toBe(sharedSchema.shape.boolean);
   });
 });
