@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.3.0...v0.3.1) (2024-09-27)
+
+
+### Bug Fixes
+
+* **transform:** fix a bug that wrap values unintentionally, improve array, tuple, and set coercion logic ([c4d5cb5](https://github.com/jsnimda/fastify-zod-query-coercion/commit/c4d5cb54555ab65bf035e2e195df75e9860e7e66))
+
 ## [0.3.0](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.4...v0.3.0) (2024-09-27)
 
 
