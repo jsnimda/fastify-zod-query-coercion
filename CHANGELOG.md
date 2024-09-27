@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.4...v0.3.0) (2024-09-27)
+
+
+### Features
+
+* add support for coercing multiple schema types ([74888d6](https://github.com/jsnimda/fastify-zod-query-coercion/commit/74888d6490787e6d3b85d91cd666b93f050f1fc9))
+
 ## [0.2.4](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.2.3...v0.2.4) (2024-09-25)
 
 
