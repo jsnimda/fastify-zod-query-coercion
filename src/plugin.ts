@@ -14,25 +14,29 @@ const plugin: FastifyPluginAsync = async (fastify) => {
       isZodType(route.schema?.querystring, 'ZodObject') &&
       !(route.schema.querystring as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]
     ) {
-      const newShape = Object.entries(route.schema.querystring.shape).reduce((acc, [key, value]) => {
-        try {
-          acc[key] = transformSchema(value);
-        } catch (error) {
-          if (error instanceof UnsupportedZodType) {
-            throw FST_ZOD_QUERY_COERCION_ERROR(error.message, key);
-          }
-          throw error;
-        }
-        return acc;
-      }, {} as z.ZodRawShape);
-      route.schema.querystring = new z.ZodObject({
-        ...route.schema.querystring._def,
-        shape: () => newShape,
-      });
+      route.schema.querystring = transformObject(route.schema.querystring);
       (route.schema.querystring as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED] = true;
     }
   });
 };
+
+function transformObject(schema: z.ZodObject<z.ZodRawShape>) {
+  const newShape = Object.entries(schema.shape).reduce((acc, [key, value]) => {
+    try {
+      acc[key] = transformSchema(value);
+    } catch (error) {
+      if (error instanceof UnsupportedZodType) {
+        throw FST_ZOD_QUERY_COERCION_ERROR(error.message, key);
+      }
+      throw error;
+    }
+    return acc;
+  }, {} as z.ZodRawShape);
+  return new z.ZodObject({
+    ...schema._def,
+    shape: () => newShape,
+  });
+}
 
 const fastifyZodQueryCoercion = fp(plugin, {
   fastify: '>=4',
