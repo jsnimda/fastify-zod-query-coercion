@@ -1,12 +1,9 @@
-import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import fastifyZodQueryCoercion, { FST_ZOD_QUERY_COERCION_ERROR } from '../src/plugin.js';
 import { FASTIFY_ZOD_QUERY_COERCION_PROCESSED } from '../src/symbols.js';
 import * as transform from '../src/transform.js';
-import { validatorCompiler } from './test-utils.js';
-
-const getFastify = () => Fastify();
+import { errorHandler, getFastify, validatorCompiler } from './test-utils.js';
 
 describe('fastifyZodQueryCoercion plugin', () => {
   let app: ReturnType<typeof getFastify>;
@@ -14,6 +11,7 @@ describe('fastifyZodQueryCoercion plugin', () => {
   beforeEach(() => {
     app = getFastify();
     app.setValidatorCompiler(validatorCompiler);
+    app.setErrorHandler(errorHandler);
   });
 
   afterEach(async () => {
@@ -139,5 +137,49 @@ describe('fastifyZodQueryCoercion plugin', () => {
 
     // The original schema should not have the processed flag
     expect((originalSchema as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]).toBeUndefined();
+  });
+
+  it('should not transform params schema by default', async () => {
+    await app.register(fastifyZodQueryCoercion);
+
+    app.get('/:id', {
+      schema: {
+        params: z.object({
+          id: z.number()
+        })
+      }
+    }, (request) => {
+      return { id: request.params.id };
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/123',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.payload).toBe('Expected number, received string at "id"');
+  });
+
+  it('should transform params schema when specified in options', async () => {
+    await app.register(fastifyZodQueryCoercion, { schemaTypes: ['querystring', 'params'] });
+
+    app.get('/:id', {
+      schema: {
+        params: z.object({
+          id: z.number()
+        })
+      }
+    }, (request) => {
+      return { id: request.params.id };
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/123',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ id: 123 });
   });
 });

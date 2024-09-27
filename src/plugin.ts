@@ -8,15 +8,25 @@ import { isZodType } from './zod-types.js';
 
 export const FST_ZOD_QUERY_COERCION_ERROR = createError('FST_ZOD_QUERY_COERCION_ERROR', '%s at "%s"');
 
-const plugin: FastifyPluginAsync = async (fastify) => {
+type FastifySchemaType = 'querystring' | 'params' | 'headers' | 'body';
+
+interface FastifyZodQueryCoercionOptions {
+  schemaTypes?: FastifySchemaType[];
+}
+
+const plugin: FastifyPluginAsync<FastifyZodQueryCoercionOptions> = async (fastify, opts) => {
+  const schemaTypes = opts.schemaTypes ?? ['querystring'];
+
   fastify.addHook('onRoute', (route) => {
-    if (
-      isZodType(route.schema?.querystring, 'ZodObject') &&
-      !(route.schema.querystring as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]
-    ) {
-      route.schema.querystring = transformObject(route.schema.querystring);
-      (route.schema.querystring as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED] = true;
-    }
+    schemaTypes.forEach((schemaType) => {
+      if (
+        isZodType(route.schema?.[schemaType], 'ZodObject') &&
+        !(route.schema[schemaType] as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED]
+      ) {
+        route.schema[schemaType] = transformObject(route.schema[schemaType]);
+        (route.schema[schemaType] as any)[FASTIFY_ZOD_QUERY_COERCION_PROCESSED] = true;
+      }
+    });
   });
 };
 
