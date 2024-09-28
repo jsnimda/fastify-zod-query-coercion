@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.3.2...v1.0.0) (2024-09-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* Marking 1.0.0 as the first stable release. While there are no specific breaking changes in functionality, this version establishes the stable API for semantic versioning going forward.
+
+### Miscellaneous Chores
+
+* prepare for 1.0.0 release ([ec0f7d9](https://github.com/jsnimda/fastify-zod-query-coercion/commit/ec0f7d97cad86b86ca6306607d4155e12e9a2135))
+
 ## [0.3.2](https://github.com/jsnimda/fastify-zod-query-coercion/compare/v0.3.1...v0.3.2) (2024-09-28)
 
 
