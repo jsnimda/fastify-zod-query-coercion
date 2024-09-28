@@ -1,6 +1,6 @@
 {
   "name": "fastify-zod-query-coercion",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A Fastify plugin that automatically converts query parameter types based on Zod schemas",
   "keywords": [
     "fastify",
